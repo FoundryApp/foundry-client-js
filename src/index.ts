@@ -1,8 +1,8 @@
-import fb from 'firebase/app';
+import firebase from 'firebase/app';
 
-import * as firebaseAuth from './api/firebase/auth';
-import * as firebaseFirestore from './api/firebase/firestore';
-import * as firebaseFunctions from './api/firebase/functions';
+// import * as authApi from './api/firebase/auth';
+import * as firestoreApi from './api/firebase/firestore';
+import * as functionsApi from './api/firebase/functions';
 
 interface FirebaseConfig {
   options: object; // TODO: Make this explicit?
@@ -14,25 +14,33 @@ export interface FoundryConfig {
 }
 
 function initialize(config: FoundryConfig) {
-  fb.initializeApp(config.firebase.options, config.firebase.name);
-  fb.functions();
+  firebase.initializeApp(config.firebase.options, config.firebase.name);
+  firebase.firestore().settings({
+    // TODO
+    host: 'https://foundryapp.co/firestores',
+  });
+  // TODO
+  firebase.functions().useFunctionsEmulator('https://foundryapp.co/functions');
 }
+
+const foundryFirebase = {
+  ...firebase,
+  firestore: firestoreApi.firestore,
+  functions: functionsApi.functions,
+  // auth: firebaseAuth,
+};
+
+delete foundryFirebase.analytics;
+delete foundryFirebase.database;
+// delete foundryFirebase.installations; TODO: ???
+delete foundryFirebase.messaging;
+delete foundryFirebase.performance;
+delete foundryFirebase.remoteConfig;
+delete foundryFirebase.storage;
 
 const foundry = {
   initialize,
-  firebase: {
-    ...fb,
-    analytics: undefined,
-    database: undefined,
-    installations: undefined,
-    messaging: undefined,
-    performance: undefined,
-    remoteconfig: undefined,
-    storage: undefined,
-    auth: firebaseAuth,
-    firestore: firebaseFirestore,
-    function: firebaseFunctions,
-  }
+  firebase: foundryFirebase,
 };
 
 export default foundry;
