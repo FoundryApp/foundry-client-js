@@ -1,5 +1,21 @@
-import foundry from './index';
 
+import foundry from './index';
+import * as api from './api';
+// import * as firebase from 'firebase';
+// import 'firebase/auth';
+// const app = firebase.initializeApp({
+//   apiKey: 'AIzaSyAqL--IsyZd3cQTUgXR3KRWZZN-M6jR1kE',
+//   authDomain: 'foundryapp.firebaseapp.com',
+//   databaseURL: 'https://foundryapp.firebaseio.com',
+//   projectId: 'foundryapp',
+//   storageBucket: 'foundryapp.appspot.com',
+//   messagingSenderId: '103053412875',
+//   appId: '1:103053412875:web:d6720b66501102a45e550e',
+// });
+
+
+
+// (document as any).___FOUNDRY_ENV_DEV_API_KEY___ = 'foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8a4787ca7be8739b2f6ea08e2aed8a9c';
 
 
 // if (process.env.IS_DEV) {
@@ -21,12 +37,27 @@ import foundry from './index';
 //   });
 // }
 
-foundry.initializeDev();
+
 
 
 const { firebase } = foundry;
 
 async function startMayhem() {
+  await foundry.initializeDev();
+
+  // await api.createUser('email@example.com', '123456');
+  try {
+    // const { user } = await firebase.auth().createUserWithEmailAndPassword('new-user7@email.com', '123456');
+    const { user } = await firebase.auth().signInWithEmailAndPassword('new-user5@email.com', '123456');
+    console.log('user', user?.uid);
+    console.log('user', user?.email);
+  } catch (err) {
+    console.error(err);
+  }
+
+  // const { user } = await app.auth().signInWithEmailAndPassword('vasek@foundryapp.co', '123456');
+  // const tok = await user?.getIdToken();
+  // console.log(tok);
 
   // await firebase.firestore().collection('hello').add({
   //   a: 'b',
@@ -50,12 +81,12 @@ async function startMayhem() {
   // console.log('////');
   // console.log(firebase.app().auth().currentUser);
   console.log('////');
-  try {
-    const { user } = await firebase.auth().signInWithEmailAndPassword('vasek+asj@foundryapp.co', '123456');
-    console.log(user?.email);
-  } catch (err) {
-    console.log(err);
-  }
+  // try {
+  //   const { user } = await firebase.auth().signInWithEmailAndPassword('vasek+asj@foundryapp.co', '123456');
+  //   console.log(user?.email);
+  // } catch (err) {
+  //   console.log(err);
+  // }
   // firebase.apps[0].auth().app.auth().createUserWithEmailAndPassword('v', 'w');
   // firebase.auth(firebase.auth().app).createUserWithEmailAndPassword('x', 'y');
   // firebase.auth().createUserWithEmailAndPassword('1', '2');

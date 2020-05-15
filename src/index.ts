@@ -3,11 +3,9 @@ import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
 
-import * as runtime from './api/firebase/runtime';
+import * as api from './api';
 
-// import * as authApi from './api/firebase/auth';
-// import * as firestoreApi from './api/firebase/firestore';
-// import * as functionsApi from './api/firebase/functions';
+import * as runtime from './modules/firebase/runtime';
 
 import { Proxied } from './proxy';
 
@@ -47,7 +45,7 @@ const proxiedFirebase = new Proxied<typeof firebase>(firebase)
     return proxyFBAppAuth(fb.auth());
   })
   // Remove currently unsupported modules from Firebase:
-  // TODO: DON'T DO THIS WHEN initializeProd was called!!!
+  // TODO: DON'T PROXY FIREBASE WHEN initializeProd was called!!!
   .when('analytics', () => undefined)
   .when('database', () => undefined)
   .when('messaging', () => undefined)
@@ -69,23 +67,49 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
   return new Proxied<firebase.auth.Auth>(appAuth)
     .when('app', () => proxyFBApp(appAuth.app))
     .when('createUserWithEmailAndPassword', (auth) => async (email: string, password: string) => {
-      try {
-        // First do auth against Foundry Runtime Auth
+      // TODO: Check email and password?
 
-        const foundryApp = firebase.app(foundryAppName);
-        foundryApp.;
+      // 1. Call our own API endpoint so we create a user in Firebase Auth project with custom UID
+      // This can't be done with the client Firebase SDK
+      const { userId: proxiedUserId }: { userId: string } = await api.createUser(email, password);
 
-        const runtimeEmail = `${uid}_${email}`;
-        await runtime.createUser(runtimeEmail, email, password);
-        return auth.createUserWithEmailAndPassword(email, password);
-      } catch (err) {
-        throw err;
-      }
+      // 2. Sign in here with auth.signInWithEmailAndPassword
+      const owner = await api.getEnvOwner();
+      const userCredentials = await auth.signInWithEmailAndPassword(`${owner.uid}_${email}`, password);
 
+      const unproxiedUserId = proxiedUserId.split('_')[1];
+
+      await runtime.createUser(owner.uid, unproxiedUserId);
+
+      return new Proxied<firebase.auth.UserCredential>(userCredentials)
+        .when('user', (credentials) => {
+          if (credentials.user) {
+            return new Proxied<firebase.User>(credentials.user)
+              .when('email', () => email)
+              .when('uid', () => unproxiedUserId)
+              .finalize();
+          }
+          return null;
+        })
+        .finalize();
     })
-    .when('signInWithEmailAndPassword', (auth) => (email: string, password: string) => {
-      // TODO: Communicate with firebase-runtime
-      return auth.signInWithEmailAndPassword(email, password);
+    .when('signInWithEmailAndPassword', (auth) => async (email: string, password: string) => {
+      const owner = await api.getEnvOwner();
+      const proxiedEmail = `${owner.uid}_${email}`;
+
+      const userCredentials = await auth.signInWithEmailAndPassword(proxiedEmail, password);
+
+      return new Proxied<firebase.auth.UserCredential>(userCredentials)
+        .when('user', (credentials) => {
+          if (credentials.user) {
+            return new Proxied<firebase.User>(credentials.user)
+              .when('email', () => email)
+              .when('uid', (user) => user.uid.split('_')[1])
+              .finalize();
+          }
+          return null;
+        })
+        .finalize();
     })
     .finalize();
 }
@@ -94,43 +118,36 @@ function initializeProd(config: FoundryConfig) {
   proxiedFirebase.initializeApp(config.firebase.options, config.firebase.name);
 }
 
-function initializeDev() {
+async function initializeDev() {
   // In the dev mode, Firebase is configured to connect to our Auth project
   const foundryAuthconfig = {
-    apiKey: 'AIzaSyA9iGvgpbusMPnC2Ef6KKDnh9gQM0Pocfg',
-    authDomain: 'foundry-runtime-auth.firebaseapp.com',
-    databaseURL: 'https://foundry-runtime-auth.firebaseio.com',
-    projectId: 'foundry-runtime-auth',
-    storageBucket: 'foundry-runtime-auth.appspot.com',
-    messagingSenderId: '527246454155',
-    appId: '1:527246454155:web:d9cf9dd2d3bdb0c22a938e',
-    measurementId: 'G-GZ44BGRWL7',
+    apiKey: 'AIzaSyAVGHbPUV10gw2sfAhO0rKeosRGRVzWF2c',
+    authDomain: 'foundry-auth-56125.firebaseapp.com',
+    databaseURL: 'https://foundry-auth-56125.firebaseio.com',
+    projectId: 'foundry-auth-56125',
+    storageBucket: 'foundry-auth-56125.appspot.com',
+    messagingSenderId: '754118299690',
+    appId: '1:754118299690:web:c3f8939bb2bfcf04847353',
+    measurementId: 'G-FTE7202N6R',
   };
   const foundryAuthApp = proxiedFirebase.initializeApp(foundryAuthconfig);
 
+  // TODO: Have a global env that is dynamically injected by runtime
+  // This env tells me that this SDK is being execuced inside the pod
+  // Because there are 2 options how user can use this SDK
+  // - running it locally from the user's computer without explicit active Foundry session
+  // - having an explicit active Foundry session (e.g.: $ foundry go) - this means that the
+  // the webapp is hosted on our server next to runtime
+  // const url = __ENV__ ? 'localhost:8000' : 'https://some-id.dev.foundryapp.co/'
+
   foundryAuthApp.firestore().settings({
     // TODO
-    host: 'localhost:8443',
+    host: 'localhost:8080',
     ssl: false,
   });
 
   // TODO
-  foundryAuthApp.functions().useFunctionsEmulator('https://foundryapp.co/functions');
-
-  // TODO: THIS must be done through our backend
-  // because if we were using client SDK for this
-  // user would have to actually sign in!!!!
-  // Also initialize Firebase app for Foundry
-  const foundryAppConfig = {
-    apiKey: 'AIzaSyAqL--IsyZd3cQTUgXR3KRWZZN-M6jR1kE',
-    authDomain: 'foundryapp.firebaseapp.com',
-    databaseURL: 'https://foundryapp.firebaseio.com',
-    projectId: 'foundryapp',
-    storageBucket: 'foundryapp.appspot.com',
-    messagingSenderId: '103053412875',
-    appId: '1:103053412875:web:d6720b66501102a45e550e',
-  };
-  proxiedFirebase.initializeApp(foundryAppConfig, foundryAppName);
+  foundryAuthApp.functions().useFunctionsEmulator('localhost:8000/functions');
 }
 
 const foundry = {
