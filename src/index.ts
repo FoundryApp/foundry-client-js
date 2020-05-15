@@ -63,9 +63,21 @@ function proxyFBApp(fbApp: firebase.app.App) {
     .finalize();
 }
 
+// TODO: Proxy methods for changing user email
+
 function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
   return new Proxied<firebase.auth.Auth>(appAuth)
     .when('app', () => proxyFBApp(appAuth.app))
+    .when('currentUser', (auth) => {
+      if (auth.currentUser) {
+        return new Proxied<firebase.User>(auth.currentUser)
+          // TODO: Check for arr length when spliting?
+          .when('email', (user) => user.email ? user.email.split('_')[1] : '')
+          .when('uid', (user) => user.uid.split('_')[1])
+          .finalize();
+      }
+      return null;
+    })
     .when('createUserWithEmailAndPassword', (auth) => async (email: string, password: string) => {
       // TODO: Check email and password?
 

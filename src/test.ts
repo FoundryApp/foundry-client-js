@@ -51,6 +51,10 @@ async function startMayhem() {
     const { user } = await firebase.auth().signInWithEmailAndPassword('new-user5@email.com', '123456');
     console.log('user', user?.uid);
     console.log('user', user?.email);
+
+    console.log(firebase.auth().currentUser?.uid);
+    console.log(firebase.auth().currentUser?.email);
+
   } catch (err) {
     console.error(err);
   }
