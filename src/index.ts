@@ -63,11 +63,28 @@ function proxyFBApp(fbApp: firebase.app.App) {
 }
 
 // TODO: Proxy methods for changing user email
-// TODO: Instead of split('_') get substring of (len(ownerId) + 1), +1 because _
-// TODO: Instead of using '_' as a separator use something like '$_FOUNDRY_$'
-// that way, there probably won't be users using this a part of their email address
 
 
+// TODO: Use a single method for proxy-ing user
+function proxyFBUser(fbUser: firebase.User) {
+  return new Proxied<firebase.User>(fbUser)
+    // TODO: Check for arr length when spliting?
+    .when('email', (user) => user.email ? user.email.split(foundryAuthSeparator)[1] : null)
+    .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
+    .when('updateEmail', (user) => (newEmail: string) => {
+      // TODO
+    })
+    .when('verifyBeforeUpdateEmail', (user) => (newEmail: string, actionCodeSettings?: firebase.auth.ActionCodeSettings | null) => {
+      // TODO
+    })
+    .when('toJSON', (user) => () => {
+      // TODO
+    })
+    .when('delete', (user) => () => {
+      // TODO?
+    })
+    .finalize();
+}
 
 function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
   return new Proxied<firebase.auth.Auth>(appAuth)
@@ -83,15 +100,13 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
       return null;
     })
     .when('createUserWithEmailAndPassword', (auth) => async (email: string, password: string) => {
-      // TODO: Check email and password?
-
-      // 1. Call our own API endpoint so we create a user in Firebase Auth project with custom UID
+      // Call our own API endpoint so we create a user in Firebase Auth project with custom UID
       // This can't be done with the client Firebase SDK
       const { userId: proxiedUserId }: { userId: string } = await api.createUser(email, password);
 
-      // 2. Sign in here with auth.signInWithEmailAndPassword
       const owner = await api.getEnvOwner();
-      const userCredentials = await auth.signInWithEmailAndPassword(`${owner.uid}${foundryAuthSeparator}${email}`, password);
+      const prefixedEmail = owner.uid + foundryAuthSeparator + email;
+      const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 
       const unprefixedUserId = proxiedUserId.split(foundryAuthSeparator)[1];
 
