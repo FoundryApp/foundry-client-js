@@ -47,14 +47,15 @@ async function startMayhem() {
 
   // await api.createUser('email@example.com', '123456');
   try {
-    // const { user } = await firebase.auth().createUserWithEmailAndPassword('new-user7@email.com', '123456');
-    const { user } = await firebase.auth().signInWithEmailAndPassword('new-user5@email.com', '123456');
+    const { user } = await firebase.auth().createUserWithEmailAndPassword('user@email.com', '123456');
+    // const { user } = await firebase.auth().signInWithEmailAndPassword('new-user5@email.com', '123456');
     console.log('user', user?.uid);
     console.log('user', user?.email);
 
+    console.log(firebase.auth().currentUser);
+
     console.log(firebase.auth().currentUser?.uid);
     console.log(firebase.auth().currentUser?.email);
-
   } catch (err) {
     console.error(err);
   }

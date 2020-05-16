@@ -9,8 +9,7 @@ import * as runtime from './modules/firebase/runtime';
 
 import { Proxied } from './proxy';
 
-// const foundryRuntimeAuthApp = '__FOUNDRY__-foundry-runtime-auth';
-const foundryAppName = '__FOUNDRY__';
+const foundryAuthSeparator = '$_foundry_$';
 
 interface FirebaseConfig {
   options: object; // TODO: Make this explicit?
@@ -64,6 +63,11 @@ function proxyFBApp(fbApp: firebase.app.App) {
 }
 
 // TODO: Proxy methods for changing user email
+// TODO: Instead of split('_') get substring of (len(ownerId) + 1), +1 because _
+// TODO: Instead of using '_' as a separator use something like '$_FOUNDRY_$'
+// that way, there probably won't be users using this a part of their email address
+
+
 
 function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
   return new Proxied<firebase.auth.Auth>(appAuth)
@@ -72,8 +76,8 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
       if (auth.currentUser) {
         return new Proxied<firebase.User>(auth.currentUser)
           // TODO: Check for arr length when spliting?
-          .when('email', (user) => user.email ? user.email.split('_')[1] : '')
-          .when('uid', (user) => user.uid.split('_')[1])
+          .when('email', (user) => user.email ? user.email.split(foundryAuthSeparator)[1] : null)
+          .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
           .finalize();
       }
       return null;
@@ -87,18 +91,18 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
 
       // 2. Sign in here with auth.signInWithEmailAndPassword
       const owner = await api.getEnvOwner();
-      const userCredentials = await auth.signInWithEmailAndPassword(`${owner.uid}_${email}`, password);
+      const userCredentials = await auth.signInWithEmailAndPassword(`${owner.uid}${foundryAuthSeparator}${email}`, password);
 
-      const unproxiedUserId = proxiedUserId.split('_')[1];
+      const unprefixedUserId = proxiedUserId.split(foundryAuthSeparator)[1];
 
-      await runtime.createUser(owner.uid, unproxiedUserId);
+      await runtime.createUser(owner.uid, unprefixedUserId);
 
       return new Proxied<firebase.auth.UserCredential>(userCredentials)
         .when('user', (credentials) => {
           if (credentials.user) {
             return new Proxied<firebase.User>(credentials.user)
               .when('email', () => email)
-              .when('uid', () => unproxiedUserId)
+              .when('uid', () => unprefixedUserId)
               .finalize();
           }
           return null;
@@ -107,16 +111,16 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
     })
     .when('signInWithEmailAndPassword', (auth) => async (email: string, password: string) => {
       const owner = await api.getEnvOwner();
-      const proxiedEmail = `${owner.uid}_${email}`;
+      const prefixedEmail = `${owner.uid}${foundryAuthSeparator}${email}`;
 
-      const userCredentials = await auth.signInWithEmailAndPassword(proxiedEmail, password);
+      const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 
       return new Proxied<firebase.auth.UserCredential>(userCredentials)
         .when('user', (credentials) => {
           if (credentials.user) {
             return new Proxied<firebase.User>(credentials.user)
               .when('email', () => email)
-              .when('uid', (user) => user.uid.split('_')[1])
+              .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
               .finalize();
           }
           return null;
