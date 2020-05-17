@@ -26,6 +26,8 @@ export interface FoundryConfig {
 
 // TODO: Must also proxy firestore.app, database.app
 
+// TODO: Handle when user is signing up/signing in with 3rd party providers (Twitter, Facebook, etc)
+// because user has its own email there. Should we prefix it?
 
 const proxiedFirebase = new Proxied<typeof originalFirebase>(originalFirebase)
   .when('initializeApp', (fb) => (options: Object, name?: string) => {
@@ -83,6 +85,42 @@ function proxyFBUser(fbUser: originalFirebase.User) {
     })
     .when('toJSON', (user) => () => {
       // TODO
+      const json: any = user.toJSON();
+      const { uid, email, providerData }: { uid: string, email: string, providerData: firebase.UserInfo[] } = json;
+
+      let unprefixedEmail = email;
+      if (email) {
+        unprefixedEmail = email.split(foundryAuthSeparator)[1];
+      }
+      const unprefixedUID = uid.split(foundryAuthSeparator)[1];
+
+      // TODO: If user has multiple providers, we probably change the UID for each provider
+      const filtered = providerData.filter(p => p.providerId === 'password');
+      // TODO: Can you have multiple 'password' providers?
+      let newPasswordProvider: any;
+      if (filtered.length === 1) {
+        const passwordProvider = filtered[0];
+        newPasswordProvider = {
+          ...passwordProvider,
+          uid: unprefixedUID,
+          email: passwordProvider.email ? unprefixedEmail : null,
+        };
+      }
+
+      const newProviders = [...providerData];
+      if (newPasswordProvider) {
+        newProviders.map(p => {
+          if (p.providerId === 'password') {
+            p = newPasswordProvider;
+          }
+        });
+      }
+      return {
+        ...json,
+        providerData: newProviders,
+        uid: unprefixedUID,
+        email: unprefixedEmail,
+      };
     })
     .when('delete', (user) => () => {
       // TODO?
@@ -182,7 +220,7 @@ async function initializeDev() {
   });
 
   // TODO
-  foundryAuthApp.functions().useFunctionsEmulator('localhost:8000/functions');
+  foundryAuthApp.functions().useFunctionsEmulator('http://localhost:8000/functions');
 }
 
 function __overrideEnvDevAPIKey(k: string) {
