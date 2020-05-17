@@ -1,5 +1,6 @@
 
-import foundry from './index';
+import * as foundry from './index';
+
 // import * as firebase from 'firebase';
 // import 'firebase/auth';
 // const app = firebase.initializeApp({

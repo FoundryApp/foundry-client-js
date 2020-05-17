@@ -8,7 +8,6 @@ export interface EnvOwner {
   email: string;
 }
 
-
 enum HttpMethod {
   Get = 'GET',
   Post = 'POST',

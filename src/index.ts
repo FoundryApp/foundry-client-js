@@ -1,4 +1,4 @@
-import firebase from 'firebase/app';
+import originalFirebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
@@ -27,7 +27,7 @@ export interface FoundryConfig {
 // TODO: Must also proxy firestore.app, database.app
 
 
-const proxiedFirebase = new Proxied<typeof firebase>(firebase)
+const proxiedFirebase = new Proxied<typeof originalFirebase>(originalFirebase)
   .when('initializeApp', (fb) => (options: Object, name?: string) => {
     // TODO: Should we forbid user initializing app when in dev env?
     const app = fb.initializeApp(options, name);
@@ -40,7 +40,7 @@ const proxiedFirebase = new Proxied<typeof firebase>(firebase)
   .when('apps', (fb) => {
     return fb.apps.map(a => proxyFBApp(a));
   })
-  .when('auth', (fb) => (app?: firebase.app.App) => {
+  .when('auth', (fb) => (app?: originalFirebase.app.App) => {
     if (app) {
       return proxyFBAppAuth(app.auth());
     }
@@ -58,8 +58,8 @@ const proxiedFirebase = new Proxied<typeof firebase>(firebase)
   .when('installations', () => undefined)
   .finalize();
 
-function proxyFBApp(fbApp: firebase.app.App) {
-  return new Proxied<firebase.app.App>(fbApp)
+function proxyFBApp(fbApp: originalFirebase.app.App) {
+  return new Proxied<originalFirebase.app.App>(fbApp)
     .when('auth', (app) => () => {
       return proxyFBAppAuth(app.auth());
     })
@@ -70,15 +70,15 @@ function proxyFBApp(fbApp: firebase.app.App) {
 
 
 // TODO: Use a single method for proxy-ing user
-function proxyFBUser(fbUser: firebase.User) {
-  return new Proxied<firebase.User>(fbUser)
+function proxyFBUser(fbUser: originalFirebase.User) {
+  return new Proxied<originalFirebase.User>(fbUser)
     // TODO: Check for arr length when spliting?
     .when('email', (user) => user.email ? user.email.split(foundryAuthSeparator)[1] : null)
     .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
     .when('updateEmail', (user) => (newEmail: string) => {
       // TODO
     })
-    .when('verifyBeforeUpdateEmail', (user) => (newEmail: string, actionCodeSettings?: firebase.auth.ActionCodeSettings | null) => {
+    .when('verifyBeforeUpdateEmail', (user) => (newEmail: string, actionCodeSettings?: originalFirebase.auth.ActionCodeSettings | null) => {
       // TODO
     })
     .when('toJSON', (user) => () => {
@@ -90,12 +90,12 @@ function proxyFBUser(fbUser: firebase.User) {
     .finalize();
 }
 
-function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
-  return new Proxied<firebase.auth.Auth>(appAuth)
+function proxyFBAppAuth(appAuth: originalFirebase.auth.Auth) {
+  return new Proxied<originalFirebase.auth.Auth>(appAuth)
     .when('app', () => proxyFBApp(appAuth.app))
     .when('currentUser', (auth) => {
       if (auth.currentUser) {
-        return new Proxied<firebase.User>(auth.currentUser)
+        return new Proxied<originalFirebase.User>(auth.currentUser)
           // TODO: Check for arr length when spliting?
           .when('email', (user) => user.email ? user.email.split(foundryAuthSeparator)[1] : null)
           .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
@@ -116,10 +116,10 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
 
       await runtime.createUser(owner.uid, unprefixedUserId);
 
-      return new Proxied<firebase.auth.UserCredential>(userCredentials)
+      return new Proxied<originalFirebase.auth.UserCredential>(userCredentials)
         .when('user', (credentials) => {
           if (credentials.user) {
-            return new Proxied<firebase.User>(credentials.user)
+            return new Proxied<originalFirebase.User>(credentials.user)
               .when('email', () => email)
               .when('uid', () => unprefixedUserId)
               .finalize();
@@ -134,10 +134,10 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
 
       const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 
-      return new Proxied<firebase.auth.UserCredential>(userCredentials)
+      return new Proxied<originalFirebase.auth.UserCredential>(userCredentials)
         .when('user', (credentials) => {
           if (credentials.user) {
-            return new Proxied<firebase.User>(credentials.user)
+            return new Proxied<originalFirebase.User>(credentials.user)
               .when('email', () => email)
               .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
               .finalize();
@@ -189,11 +189,10 @@ function __overrideEnvDevAPIKey(k: string) {
   foundryEnvDevAPI.__overrideAPIKey(k);
 }
 
-const foundry = {
+export const firebase = proxiedFirebase;
+export {
   initializeProd,
   initializeDev,
   __overrideEnvDevAPIKey,
-  firebase: proxiedFirebase,
 };
 
-export default foundry;
