@@ -1,6 +1,5 @@
 
 import foundry from './index';
-import * as api from './api';
 // import * as firebase from 'firebase';
 // import 'firebase/auth';
 // const app = firebase.initializeApp({
@@ -41,14 +40,14 @@ import * as api from './api';
 
 
 const { firebase } = foundry;
+foundry.__overrideEnvDevAPIKey('foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8a4787ca7be8739b2f6ea08e2aed8a9c');
 
 async function startMayhem() {
   await foundry.initializeDev();
 
-  // await api.createUser('email@example.com', '123456');
   try {
-    const { user } = await firebase.auth().createUserWithEmailAndPassword('user2@email.com', '123');
-    // const { user } = await firebase.auth().signInWithEmailAndPassword('new-user5@email.com', '123456');
+    // const { user } = await firebase.auth().createUserWithEmailAndPassword('user3@email.com', '123456');
+    const { user } = await firebase.auth().signInWithEmailAndPassword('user3@email.com', '123456');
     console.log('user', user?.uid);
     console.log('user', user?.email);
 

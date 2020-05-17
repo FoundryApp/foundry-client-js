@@ -3,11 +3,15 @@ import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
 
-import * as api from './api';
+import { FoundryEnvDevAPI } from './api';
 
 import * as runtime from './modules/firebase/runtime';
 
 import { Proxied } from './proxy';
+
+// TODO: This is dynamically injected by runtime
+const ___FOUNDRY_OWNER_ENV_DEV_API_KEY___ = '';
+const foundryEnvDevAPI = new FoundryEnvDevAPI(___FOUNDRY_OWNER_ENV_DEV_API_KEY___);
 
 const foundryAuthSeparator = '$_foundry_$';
 
@@ -102,9 +106,9 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
     .when('createUserWithEmailAndPassword', (auth) => async (email: string, password: string) => {
       // Call our own API endpoint so we create a user in Firebase Auth project with custom UID
       // This can't be done with the client Firebase SDK
-      const { userId: proxiedUserId }: { userId: string } = await api.createUser(email, password);
+      const { userId: proxiedUserId }: { userId: string } = await foundryEnvDevAPI.createUser(email, password);
 
-      const owner = await api.getEnvOwner();
+      const owner = await foundryEnvDevAPI.getEnvOwner();
       const prefixedEmail = owner.uid + foundryAuthSeparator + email;
       const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 
@@ -125,7 +129,7 @@ function proxyFBAppAuth(appAuth: firebase.auth.Auth) {
         .finalize();
     })
     .when('signInWithEmailAndPassword', (auth) => async (email: string, password: string) => {
-      const owner = await api.getEnvOwner();
+      const owner = await foundryEnvDevAPI.getEnvOwner();
       const prefixedEmail = `${owner.uid}${foundryAuthSeparator}${email}`;
 
       const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
@@ -181,9 +185,14 @@ async function initializeDev() {
   foundryAuthApp.functions().useFunctionsEmulator('localhost:8000/functions');
 }
 
+function __overrideEnvDevAPIKey(k: string) {
+  foundryEnvDevAPI.__overrideAPIKey(k);
+}
+
 const foundry = {
   initializeProd,
   initializeDev,
+  __overrideEnvDevAPIKey,
   firebase: proxiedFirebase,
 };
 
