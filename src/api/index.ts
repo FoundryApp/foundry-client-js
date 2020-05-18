@@ -1,4 +1,3 @@
-import ky from 'ky';
 import axios from 'axios';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
