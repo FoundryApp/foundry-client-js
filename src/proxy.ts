@@ -47,9 +47,9 @@ export class Proxied<T extends ProxyTarget> {
   } = {};
   /**
    * When initialized an original object is passed. This object is supplied to both .when()
-and .any() functions so the original value of the object is accessible. When no
-.any() is provided, the original value of the object is returned when the field
-key does not match any known rewrite.
+   * and .any() functions so the original value of the object is accessible. When no
+   * .any() is provided, the original value of the object is returned when the field
+   * key does not match any known rewrite.
    *
    * @param original
    */
@@ -61,12 +61,14 @@ key does not match any known rewrite.
         if (this.rewrites[key]) {
           return this.rewrites[key](target, key);
         }
-        if (Proxied.getOriginal(target, key) && this.anyValue) {
-          return this.anyValue(target, key);
-        }
+        // if (Proxied.getOriginal(target, key) && this.anyValue) {
+        //   return this.anyValue(target, key);
+        // }
+
         if (this.anyValue) {
           return this.anyValue(target, key);
         }
+
         return Proxied.getOriginal(target, key);
       },
       apply: (target, thisArg, argArray) => {

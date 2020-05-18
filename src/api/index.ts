@@ -29,20 +29,7 @@ export class FoundryEnvDevAPI {
   constructor(private apiKey: string) { }
 
   private async apiRequest(route: string, method: HttpMethod, useToken: boolean, reqData?: any, ) {
-    console.log('route', route);
-    console.log('this.apiKey', this.apiKey);
-
-
-
     try {
-      // const { body }: { body: any } = await ky(this.ENV_DEV_URL + route, {
-      //   method,
-      //   headers: {
-      //     authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
-      //     'content-type': 'application/json',
-      //   },
-      //   json: method !== HttpMethod.Get ? { data } : undefined,
-      // });
       const { data } = await axios({
         method,
         url: this.ENV_DEV_URL + route,
@@ -53,19 +40,9 @@ export class FoundryEnvDevAPI {
         data: method !== HttpMethod.Get ? { reqData } : undefined,
       });
 
-      // const response = await ky(this.ENV_DEV_URL + route, {
-      //   method,
-      //   headers: {
-      //     authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
-      //     'content-type': 'application/json',
-      //   },
-      //   json: method !== HttpMethod.Get ? { data } : undefined,
-      // });
-
       if (data?.data) {
         return data.data;
       } else {
-        // console.log(body);
         throw new Error(`Unexpected response:\n${JSON.stringify(data)}`);
       }
 

@@ -3,6 +3,8 @@ import 'firebase/auth';
 import 'firebase/firestore';
 import 'firebase/functions';
 
+import * as proxiedFb from './modules/firebase';
+
 import { FoundryEnvDevAPI } from './api';
 
 import * as runtime from './modules/firebase/runtime';
@@ -206,7 +208,8 @@ function initializeDev() {
     appId: '1:754118299690:web:c3f8939bb2bfcf04847353',
     measurementId: 'G-FTE7202N6R',
   };
-  const foundryAuthApp = proxiedFirebase.initializeApp(foundryAuthconfig);
+  // const foundryAuthApp = proxiedFirebase.initializeApp(foundryAuthconfig);
+  const foundryAuthApp = proxiedFb.proxiedFirebase.initializeApp(foundryAuthconfig);
 
   // TODO: Have a global env that is dynamically injected by runtime
   // This env tells me that this SDK is being execuced inside the pod
@@ -226,13 +229,9 @@ function initializeDev() {
   foundryAuthApp.functions().useFunctionsEmulator('http://localhost:8000/functions');
 }
 
-function __overrideEnvDevAPIKey(k: string) {
-  foundryEnvDevAPI.__overrideAPIKey(k);
-}
-
-export const firebase = proxiedFirebase;
+export const firebase = proxiedFb.proxiedFirebase;
+export const __overrideEnvDevAPIKey = proxiedFb.__overrideEnvDevAPIKey;
 export {
   initializeProd,
   initializeDev,
-  __overrideEnvDevAPIKey,
 };

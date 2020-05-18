@@ -18,12 +18,12 @@
     "url": "https://github.com/FoundryApp/foundry-client-js.git"
   },
   "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/uuid": "^7.0.3",
     "tslint": "^6.1.2",
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "@types/axios": "^0.14.0",
-    "@types/uuid": "^7.0.3",
     "axios": "^0.19.2",
     "firebase": "^7.14.3",
     "uuid": "^8.0.0"
