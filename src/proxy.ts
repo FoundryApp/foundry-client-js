@@ -29,7 +29,12 @@ export class Proxied<T extends ProxyTarget> {
     return target.apply(thisArg, argArray);
   }
   private static isConstructor(obj: any): boolean {
-    return !!obj && !!obj.prototype && !!obj.prototype.constructor.name;
+    // Handle if obj is undefined or null
+    if (!!obj) {
+      return false;
+    }
+
+    return !!obj.prototype && !!obj.prototype.constructor.name;
   }
   private static isExists(obj: any): boolean {
     return obj !== undefined;
@@ -52,6 +57,7 @@ key does not match any known rewrite.
     this.proxy = new Proxy(this.original, {
       get: (target, key) => {
         key = key.toString();
+
         if (this.rewrites[key]) {
           return this.rewrites[key](target, key);
         }
@@ -59,11 +65,8 @@ key does not match any known rewrite.
           return this.anyValue(target, key);
         }
         if (this.anyValue) {
-          return undefined;
+          return this.anyValue(target, key);
         }
-        // if (this.anyValue) {
-        //   return this.anyValue(target, key);
-        // }
         return Proxied.getOriginal(target, key);
       },
       apply: (target, thisArg, argArray) => {

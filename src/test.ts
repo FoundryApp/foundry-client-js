@@ -40,18 +40,24 @@ foundry.__overrideEnvDevAPIKey('foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8
 // }
 
 async function startMayhem() {
-  await foundry.initializeDev();
+  foundry.initializeDev();
 
   try {
     // const { user } = await firebase.auth().createUserWithEmailAndPassword('user3@email.com', '123456');
     const { user } = await firebase.auth().signInWithEmailAndPassword('user3@email.com', '123456');
-    console.log('user', user?.uid);
-    console.log('user', user?.email);
+    console.log(await user?.getIdToken());
+    // console.log(await firebase.auth().currentUser?.getIdToken());
+    // console.log('user', user?.uid);
+    // console.log('user', user?.email);
 
-    console.log(firebase.auth().currentUser);
 
-    console.log(firebase.auth().currentUser?.uid);
-    console.log(firebase.auth().currentUser?.email);
+
+    // console.log(firebase.auth().currentUser?.uid);
+    // console.log(firebase.auth().currentUser?.email);
+
+    // console.log('id token: \n');
+    // console.log(firebase.auth().currentUser?.getIdToken());
+
   } catch (err) {
     console.error(err);
   }

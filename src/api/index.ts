@@ -1,7 +1,7 @@
-import got from 'got';
+import ky from 'ky';
+import axios from 'axios';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
-
 
 export interface EnvOwner {
   uid: string;
@@ -13,8 +13,6 @@ enum HttpMethod {
   Post = 'POST',
 }
 export class FoundryEnvDevAPI {
-  private apiKey: string;
-
   private ENV_OWNER?: EnvOwner = undefined;
   private BASE_URL = 'https://api.foundryapp.co/v1';
   private ENV_DEV_URL = this.BASE_URL + '/env/dev';
@@ -29,24 +27,47 @@ export class FoundryEnvDevAPI {
   private ownerToken = '';
   private tokenTimestamp = 0; // The unix epoch timestamp in seconds denoting when the token was obtained
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
+  constructor(private apiKey: string) { }
 
-  private async apiRequest(route: string, method: HttpMethod, useToken: boolean, data?: any, ) {
+  private async apiRequest(route: string, method: HttpMethod, useToken: boolean, reqData?: any, ) {
+    console.log('route', route);
+    console.log('this.apiKey', this.apiKey);
+
+
+
     try {
-      const { body }: { body: any } = await got(this.ENV_DEV_URL + route, {
+      // const { body }: { body: any } = await ky(this.ENV_DEV_URL + route, {
+      //   method,
+      //   headers: {
+      //     authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
+      //     'content-type': 'application/json',
+      //   },
+      //   json: method !== HttpMethod.Get ? { data } : undefined,
+      // });
+      const { data } = await axios({
         method,
+        url: this.ENV_DEV_URL + route,
         headers: {
-          authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`
+          authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
+          'content-type': 'application/json',
         },
-        json: method !== HttpMethod.Get ? { data } : undefined,
-        responseType: 'json',
+        data: method !== HttpMethod.Get ? { reqData } : undefined,
       });
-      if (body?.data) {
-        return body.data;
+
+      // const response = await ky(this.ENV_DEV_URL + route, {
+      //   method,
+      //   headers: {
+      //     authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
+      //     'content-type': 'application/json',
+      //   },
+      //   json: method !== HttpMethod.Get ? { data } : undefined,
+      // });
+
+      if (data?.data) {
+        return data.data;
       } else {
-        throw new Error(`Unexpected response when refreshing the access token:\n${body}`);
+        // console.log(body);
+        throw new Error(`Unexpected response:\n${JSON.stringify(data)}`);
       }
 
     } catch (error) {

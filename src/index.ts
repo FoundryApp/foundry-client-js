@@ -43,11 +43,8 @@ const proxiedFirebase = new Proxied<typeof originalFirebase>(originalFirebase)
     return fb.apps.map(a => proxyFBApp(a));
   })
   .when('auth', (fb) => (app?: originalFirebase.app.App) => {
-    if (app) {
-      return proxyFBAppAuth(app.auth());
-    }
     // If app is undefined get the default app
-    return proxyFBAppAuth(fb.auth());
+    return proxyFBAppAuth(app ? app.auth() : fb.auth());
   })
   // Remove currently unsupported modules from Firebase:
   // TODO: DON'T PROXY FIREBASE WHEN initializeProd was called!!!
@@ -84,7 +81,13 @@ function proxyFBUser(fbUser: originalFirebase.User) {
       // TODO
     })
     .when('toJSON', (user) => () => {
-      // TODO
+      return user.toJSON();
+
+      // TODO: Should we proxy this?
+      // Because one of the fields this JSON contains is
+      // authDomain: 'foundry-auth-56125.firebaseapp.com',
+      // So changing user IDs and email would kind of make this JSON invalid
+
       const json: any = user.toJSON();
       const { uid, email, providerData }: { uid: string, email: string, providerData: firebase.UserInfo[] } = json;
 
@@ -191,7 +194,7 @@ function initializeProd(config: FoundryConfig) {
   proxiedFirebase.initializeApp(config.firebase.options, config.firebase.name);
 }
 
-async function initializeDev() {
+function initializeDev() {
   // In the dev mode, Firebase is configured to connect to our Auth project
   const foundryAuthconfig = {
     apiKey: 'AIzaSyAVGHbPUV10gw2sfAhO0rKeosRGRVzWF2c',
@@ -233,4 +236,3 @@ export {
   initializeDev,
   __overrideEnvDevAPIKey,
 };
-
