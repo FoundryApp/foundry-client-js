@@ -40,7 +40,7 @@ foundry.__overrideEnvDevAPIKey('foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8
 // }
 
 async function startMayhem() {
-  foundry.initializeDev();
+  // foundry.initializeDev();
 
   try {
     // const { user } = await firebase.auth().createUserWithEmailAndPassword('user3@email.com', '123456');

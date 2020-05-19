@@ -1,21 +1,34 @@
 import firebase from 'firebase/app';
 
-const apps: { [name: string]: firebase.app.App } = {};
+export const foundryAuthAppNamePrefix = '$_FOUNDRY_AUTH_APP_$';
+export const foundryAuthSeparator = '$_foundry_$';
 
-export function getProxiedApps() {
+const developerApps: { [name: string]: firebase.app.App } = {};
+
+const foundryAuthApps: { [name: string]: firebase.app.App } = {};
+
+export function getProxiedDeveloperApps() {
   const arr: firebase.app.App[] = [];
-  Object.keys(apps).map(k => arr.push(apps[k]));
+  Object.keys(developerApps).map(k => arr.push(developerApps[k]));
   return arr;
 }
 
-export function addProxiedApp(name: string, app: firebase.app.App) {
+export function addProxiedDeveloperApp(name: string, app: firebase.app.App) {
   // TODO: Check if the app already exists?
-  apps[name] = app;
+  developerApps[name] = app;
 }
 
-export function getProxiedApp(name: string) {
+export function getProxiedDeveloperApp(name: string) {
+  console.log(Object.keys(developerApps));
   // TODO: Check if the app exists?
-  return apps[name];
+  return developerApps[name];
 }
 
+export function addProxiedFoundryAuthApp(name: string, app: firebase.app.App) {
+  foundryAuthApps[name] = app;
+}
 
+export function getProxiedFoundryAuthApp(name: string) {
+  console.log(Object.keys(foundryAuthApps));
+  return foundryAuthApps[name];
+}

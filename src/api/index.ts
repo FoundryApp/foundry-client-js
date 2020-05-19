@@ -89,14 +89,14 @@ export class FoundryEnvDevAPI {
     return this.ENV_OWNER;
   }
 
-  async createUser(userEmail: string, password: string) {
+  async createUser(userEmail: string, password: string, projectID: string) {
     if (!this.isTokenAlive()) {
       await this.refreshToken();
     }
 
     const route = '/firebase/auth/user';
-    const { email, userId } = await this.apiRequest(route, HttpMethod.Post, true, { email: userEmail, password });
-    return { email, userId };
+    const { email, userID } = await this.apiRequest(route, HttpMethod.Post, true, { email: userEmail, password, projectID });
+    return { email, userID };
   }
 
   __overrideAPIKey(key: string) {
