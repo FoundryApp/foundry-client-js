@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 
@@ -37,7 +37,7 @@ export class FoundryEnvDevAPI {
           authorization: useToken ? `Bearer ${this.apiKey}:${this.ownerToken}` : `Bearer ${this.apiKey}`,
           'content-type': 'application/json',
         },
-        data: method !== HttpMethod.Get ? { reqData } : undefined,
+        data: { data: reqData },
       });
 
       if (data?.data) {
@@ -45,14 +45,15 @@ export class FoundryEnvDevAPI {
       } else {
         throw new Error(`Unexpected response:\n${JSON.stringify(data)}`);
       }
-
     } catch (error) {
-      if (error.response?.body?.error) {
-        const errStr = JSON.stringify(error.response.body.error);
-        throw new Error(errStr);
-      } else {
-        throw error;
+      if ((error as AxiosError).isAxiosError) {
+        const errorData = (error as AxiosError).response?.data;
+        if (errorData) {
+          const status = (error as AxiosError).response?.status || 'n/a';
+          throw new Error(`[${status}] ` + JSON.stringify(errorData));
+        }
       }
+      throw error;
     }
   }
 

@@ -4,15 +4,12 @@ import 'firebase/firestore';
 import 'firebase/functions';
 
 import { Proxied } from '../../proxy';
-import { proxyApp } from './app';
+import { proxyApp as proxyDeveloperApp } from './proxiedDeveloperApp';
 
-import { getProxiedFirebase as getProxiedFirebaseForFoundryAuth } from './proxiedFoundryAuthFirebase';
+import { proxyApp as proxyFoundryAuthApp } from './proxiedFoundryAuthApp';
 
-// import { foundryAuthAppName, addProxiedDeveloperApp, getProxiedApp, getProxiedApps } from './manager';
 import * as manager from './manager';
 import { FoundryEnvDevAPI } from '../../api';
-
-// TODO: Must also proxy firestore.app, database.app
 
 // TODO: Handle when user is signing up/signing in with 3rd party providers (Twitter, Facebook, etc)
 // because user has its own email there. Should we pre}fix it?
@@ -26,21 +23,26 @@ import { FoundryEnvDevAPI } from '../../api';
 const ___FOUNDRY_OWNER_ENV_DEV_API_KEY___ = '';
 const foundryEnvDevAPI = new FoundryEnvDevAPI(___FOUNDRY_OWNER_ENV_DEV_API_KEY___);
 
-function createFoundryAuthApp(name: string, developerAppProjectId: string, databaseURL?: string) {
-  console.log('createFoundryAuthApp - name', name);
+function createFoundryAuthApp(
+  name: string,
+  developerAppConfig: any,
+  developerAppName: string,
+) {
   const foundryAuthconfig = {
     apiKey: 'AIzaSyAVGHbPUV10gw2sfAhO0rKeosRGRVzWF2c',
     authDomain: 'foundry-auth-56125.firebaseapp.com',
     // databaseURL: 'https://foundry-auth-56125.firebaseio.com',
     // projectId: 'foundry-auth-56125',
-    projectId: developerAppProjectId,
+    projectId: developerAppConfig.projectId,
     // storageBucket: 'foundry-auth-56125.appspot.com',
     // messagingSenderId: '754118299690',
     // appId: '1:754118299690:web:c3f8939bb2bfcf04847353',
     // measurementId: 'G-FTE7202N6R',
-    databaseURL
+    databaseURL: developerAppConfig.databaseURL,
   };
-  return getProxiedFirebaseForFoundryAuth(developerAppProjectId, foundryEnvDevAPI).initializeApp(foundryAuthconfig, name);
+  const foundryAuthApp = firebase.initializeApp(foundryAuthconfig, name);
+
+  return proxyFoundryAuthApp(foundryAuthApp, developerAppConfig, developerAppName, foundryEnvDevAPI);
 }
 
 export function getProxiedFirebase() {
@@ -48,8 +50,7 @@ export function getProxiedFirebase() {
     .when('initializeApp', (fb) => (options: Object, name?: string) => {
       const projectId = (options as any).projectId;
       const app = fb.initializeApp(options, name);
-      console.log('app.name', app.name);
-      const proxied = proxyApp(app, foundryEnvDevAPI);
+      const proxied = proxyDeveloperApp(app);
 
       // We set the emulator URLs (Firestore, RTDB, Functions) for Foundry Auth app
       // and not for the actual developer's app. That's because Firestore, RTDB,
@@ -61,16 +62,15 @@ export function getProxiedFirebase() {
         emulatorDatabaseURL = 'http://localhost:9000?ns=' + projectId;
       }
       const authAppName = manager.foundryAuthAppNamePrefix + app.name;
-      console.log('authAppName', authAppName);
-      const authApp = createFoundryAuthApp(authAppName, (options as any).projectId, emulatorDatabaseURL);
+      const authApp = createFoundryAuthApp(authAppName, options, app.name);
 
       authApp.firestore().settings({
         host: 'localhost:8080',
         ssl: false,
       });
+      // TODO:
       authApp.functions().useFunctionsEmulator('https://localhost:8000/functions/' + projectId);
 
-      console.log('authAppName', authAppName);
       manager.addProxiedFoundryAuthApp(authAppName, authApp);
       manager.addProxiedDeveloperApp(app.name, proxied);
       return proxied;
@@ -85,13 +85,12 @@ export function getProxiedFirebase() {
       // Return auth of the Foundry Auth app that
       // is associated with the developer's app
 
-
       // If app is undefined get the default app
       const developerAppName = app ? app.name : fb.app().name;
-      console.log('developerAppName', developerAppName);
 
       const authAppName = manager.foundryAuthAppNamePrefix + developerAppName;
       const foundryAuthApp = manager.getProxiedFoundryAuthApp(authAppName);
+
       return foundryAuthApp.auth();
 
       // TODO: Should we return Foundry Auth app or developer's proxied app?

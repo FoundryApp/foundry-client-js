@@ -14,14 +14,14 @@ export function getProxiedDeveloperApps() {
 }
 
 export function addProxiedDeveloperApp(name: string, app: firebase.app.App) {
-  // TODO: Check if the app already exists?
   developerApps[name] = app;
 }
 
 export function getProxiedDeveloperApp(name: string) {
-  console.log(Object.keys(developerApps));
-  // TODO: Check if the app exists?
-  return developerApps[name];
+  if (developerApps[name]) {
+    return developerApps[name];
+  }
+  throw new Error(`No proxied developer app with the name '${name}'`);
 }
 
 export function addProxiedFoundryAuthApp(name: string, app: firebase.app.App) {
@@ -29,6 +29,8 @@ export function addProxiedFoundryAuthApp(name: string, app: firebase.app.App) {
 }
 
 export function getProxiedFoundryAuthApp(name: string) {
-  console.log(Object.keys(foundryAuthApps));
-  return foundryAuthApps[name];
+  if (foundryAuthApps[name]) {
+    return foundryAuthApps[name];
+  }
+  throw new Error(`No proxied Foundry Auth app with the name '${name}'`);
 }
