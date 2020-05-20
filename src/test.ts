@@ -1,7 +1,7 @@
 
-import * as foundry from './index';
-const { firebase } = foundry;
-foundry.__overrideEnvDevAPIKey('foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8a4787ca7be8739b2f6ea08e2aed8a9c');
+// import * as foundry from './index';
+// const { firebase } = foundry;
+// foundry.__overrideEnvDevAPIKey('foundry|ak_dev_710f41debd7d017f264c58b25dd581bd8a4787ca7be8739b2f6ea08e2aed8a9c');
 
 // import * as firebase from 'firebase';
 // import 'firebase/auth';
@@ -105,4 +105,4 @@ async function startMayhem() {
   // console.log(firebase.auth());
 }
 
-startMayhem();
+// startMayhem();

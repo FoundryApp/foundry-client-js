@@ -1,7 +1,4 @@
 import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/firestore';
-import 'firebase/functions';
 
 import { Proxied } from '../../proxy';
 import { proxyApp as proxyDeveloperApp } from './proxiedDeveloperApp';
@@ -40,6 +37,7 @@ function createFoundryAuthApp(
     // measurementId: 'G-FTE7202N6R',
     databaseURL: developerAppConfig.databaseURL,
   };
+
   const foundryAuthApp = firebase.initializeApp(foundryAuthconfig, name);
 
   return proxyFoundryAuthApp(foundryAuthApp, developerAppConfig, developerAppName, foundryEnvDevAPI);
@@ -57,10 +55,8 @@ export function getProxiedFirebase() {
       // and Functions requests must be done from the same app where is the
       // currentUser signed in. Otherwise, things like authorization headers in
       // callable Functions or Firestore rules where user checks for 'auth' won't work.
-      let emulatorDatabaseURL: string | undefined;
-      if ((options as any).databaseURL) {
-        emulatorDatabaseURL = 'http://localhost:9000?ns=' + projectId;
-      }
+      (options as any).databaseURL = 'http://localhost:9000?ns=' + projectId;
+
       const authAppName = manager.foundryAuthAppNamePrefix + app.name;
       const authApp = createFoundryAuthApp(authAppName, options, app.name);
 
@@ -69,7 +65,8 @@ export function getProxiedFirebase() {
         ssl: false,
       });
       // TODO:
-      authApp.functions().useFunctionsEmulator('https://localhost:8000/functions/' + projectId);
+      // authApp.functions().useFunctionsEmulator('http://localhost:8000/functions/' + projectId);
+      authApp.functions().useFunctionsEmulator('http://localhost:5001');
 
       manager.addProxiedFoundryAuthApp(authAppName, authApp);
       manager.addProxiedDeveloperApp(app.name, proxied);
@@ -82,6 +79,8 @@ export function getProxiedFirebase() {
       return manager.getProxiedDeveloperApps();
     })
     .when('auth', (fb) => (app?: firebase.app.App) => {
+      manager.importAuth();
+
       // Return auth of the Foundry Auth app that
       // is associated with the developer's app
 
@@ -100,6 +99,8 @@ export function getProxiedFirebase() {
       // return authApp.auth();
     })
     .when('database', (fb) => (app?: firebase.app.App) => {
+      manager.importDatabase();
+
       const developerAppName = app ? app.name : fb.app().name;
 
       const authAppName = manager.foundryAuthAppNamePrefix + developerAppName;
@@ -107,6 +108,8 @@ export function getProxiedFirebase() {
       return foundryAuthApp.database();
     })
     .when('firestore', (fb) => (app?: firebase.app.App) => {
+      manager.importFirestore();
+
       const developerAppName = app ? app.name : fb.app().name;
 
       const authAppName = manager.foundryAuthAppNamePrefix + developerAppName;
@@ -114,6 +117,8 @@ export function getProxiedFirebase() {
       return foundryAuthApp.firestore();
     })
     .when('functions', (fb) => (app?: firebase.app.App) => {
+      manager.importFunctions();
+
       const developerAppName = app ? app.name : fb.app().name;
 
       const authAppName = manager.foundryAuthAppNamePrefix + developerAppName;
@@ -123,8 +128,8 @@ export function getProxiedFirebase() {
     // Remove currently unsupported modules from Firebase:
     // TODO: Maybe left the following modules accessible?
     // Have to investigate how they are used
+    // TODO: When running in the always-online env
     .when('analytics', () => undefined)
-    .when('database', () => undefined)
     .when('messaging', () => undefined)
     .when('performance', () => undefined)
     .when('remoteConfig', () => undefined)
@@ -136,3 +141,5 @@ export function getProxiedFirebase() {
 export function __overrideEnvDevAPIKey(k: string) {
   foundryEnvDevAPI.__overrideAPIKey(k);
 }
+
+export { firebase };

@@ -1,6 +1,4 @@
 import axios, { AxiosError } from 'axios';
-import firebase from 'firebase/app';
-import 'firebase/firestore';
 
 export interface EnvOwner {
   uid: string;

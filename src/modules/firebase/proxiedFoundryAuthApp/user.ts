@@ -1,5 +1,3 @@
-import firebase from 'firebase/app';
-
 import { Proxied } from '../../../proxy';
 
 import { foundryAuthSeparator } from '../manager';

@@ -61,13 +61,13 @@ export class Proxied<T extends ProxyTarget> {
         if (this.rewrites[key]) {
           return this.rewrites[key](target, key);
         }
-        if (Proxied.getOriginal(target, key) && this.anyValue) {
-          return this.anyValue(target, key);
-        }
-
-        // if (this.anyValue) {
+        // if (Proxied.getOriginal(target, key) && this.anyValue) {
         //   return this.anyValue(target, key);
         // }
+
+        if (this.anyValue) {
+          return this.anyValue(target, key);
+        }
 
         return Proxied.getOriginal(target, key);
       },

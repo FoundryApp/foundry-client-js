@@ -1,5 +1,3 @@
-import firebase from 'firebase/app';
-
 export const foundryAuthAppNamePrefix = '$_FOUNDRY_AUTH_APP_$';
 export const foundryAuthSeparator = '$_foundry_$';
 
@@ -33,4 +31,43 @@ export function getProxiedFoundryAuthApp(name: string) {
     return foundryAuthApps[name];
   }
   throw new Error(`No proxied Foundry Auth app with the name '${name}'`);
+}
+
+
+/////////////
+
+// TODO: This must be done separate packages that are imported on the developer's side
+// such as "import '@foundryapp/firebase/firestore'".
+// Otherwise, a bundler will always bundle every require/import to the final build.
+
+let authImported = false;
+export function importAuth() {
+  if (!authImported) {
+    require('firebase/auth');
+    authImported = true;
+  }
+}
+
+let databaseImported = false;
+export function importDatabase() {
+  if (!databaseImported) {
+    require('firebase/database');
+    databaseImported = true;
+  }
+}
+
+let firestoreImported = false;
+export function importFirestore() {
+  if (!firestoreImported) {
+    require('firebase/firestore');
+    firestoreImported = true;
+  }
+}
+
+let functionsImported = false;
+export function importFunctions() {
+  if (!functionsImported) {
+    require('firebase/functions');
+    functionsImported = true;
+  }
 }

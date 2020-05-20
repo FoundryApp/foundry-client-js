@@ -1,5 +1,3 @@
-import firebase from 'firebase/app';
-
 import { Proxied } from '../../../proxy';
 import { FoundryEnvDevAPI } from '../../../api';
 import * as runtime from '../runtime';

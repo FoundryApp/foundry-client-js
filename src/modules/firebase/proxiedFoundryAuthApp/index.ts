@@ -1,7 +1,7 @@
-import firebase from 'firebase/app';
 import { FoundryEnvDevAPI } from '../../../api';
 import { Proxied } from '../../../proxy';
 
+import * as manager from '../manager';
 import { proxyAuth } from './auth';
 import { proxyDatabase } from './database';
 import { proxyFirestore } from './firestore';
@@ -23,6 +23,7 @@ export function proxyApp(
     .when('name', () => developerAppName)
     .when('options', () => developerAppConfig)
     .when('auth', (app) => () => {
+      manager.importAuth();
       return proxyAuth(app.auth(), developerAppConfig.projectId, foundryEnvDevAPI);
     })
 
@@ -30,12 +31,18 @@ export function proxyApp(
     // 'database().app' we must return the developer's app and not Foundry Auth
     // app.
     .when('database', (app) => (url?: string) => {
+      manager.importDatabase();
       return proxyDatabase(app.database(url));
     })
     .when('firestore', (app) => () => {
+      manager.importFirestore();
       return proxyFirestore(app.firestore());
     })
-    // No need to proxy the 'functions' module because you can't access Firebase app
+    .when('functions', (app) => (region?: string) => {
+      manager.importFunctions();
+      return app.functions(region);
+    })
+    // TODO REMOVE COMMENT: No need to proxy the 'functions' module because you can't access Firebase app
     // through functions like so 'functions().app'
     .finalize();
 }
