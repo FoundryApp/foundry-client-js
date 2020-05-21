@@ -7,6 +7,8 @@ import * as manager from '../manager';
 
 import { proxyUser } from './user';
 
+// TODO: Check if other functions like resetting password must be proxied
+
 export function proxyAuth(appAuth: firebase.auth.Auth, developerAppProjectID: string, foundryEnvDevAPI: FoundryEnvDevAPI) {
   return new Proxied<firebase.auth.Auth>(appAuth)
     .when('app', (auth) => {
@@ -27,17 +29,13 @@ export function proxyAuth(appAuth: firebase.auth.Auth, developerAppProjectID: st
       return null;
     })
     .when('createUserWithEmailAndPassword', (auth) => async (email: string, password: string) => {
-      // uid = <developerID>-<firebaseProjectID>$_foundry_$<random user id>
-      // uid is set on server through the Admin SDK
-      // email = <developerID>-<firebaseProjectID>$_foundry_$<email>
-
       const { userID: prefixedUserID }: { userID: string } = await foundryEnvDevAPI.createUser(email, password, developerAppProjectID);
 
       const owner = await foundryEnvDevAPI.getEnvOwner();
-      const prefixedEmail = owner.uid + '-' + developerAppProjectID + manager.foundryAuthSeparator + email;
+      const prefixedEmail = manager.prefixEmail(owner, developerAppProjectID, email);
       const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 
-      const unprefixedUserID = prefixedUserID.split(manager.foundryAuthSeparator)[1];
+      const unprefixedUserID = manager.unprefixUserID(prefixedUserID);
       await runtime.createUser(owner.uid, developerAppProjectID, unprefixedUserID);
 
       return new Proxied<firebase.auth.UserCredential>(userCredentials)
@@ -52,8 +50,7 @@ export function proxyAuth(appAuth: firebase.auth.Auth, developerAppProjectID: st
     .when('signInWithEmailAndPassword', (auth) => async (email: string, password: string) => {
       const owner = await foundryEnvDevAPI.getEnvOwner();
 
-      // email = <developerID>-<firebaseProjectID>$_foundry_$<email>
-      const prefixedEmail = owner.uid + '-' + developerAppProjectID + manager.foundryAuthSeparator + email;
+      const prefixedEmail = manager.prefixEmail(owner, developerAppProjectID, email);
 
       const userCredentials = await auth.signInWithEmailAndPassword(prefixedEmail, password);
 

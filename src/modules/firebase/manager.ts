@@ -1,5 +1,7 @@
+import { EnvOwner } from '../../api';
+
 export const foundryAuthAppNamePrefix = '$_FOUNDRY_AUTH_APP_$';
-export const foundryAuthSeparator = '$_foundry_$';
+const foundryAuthSeparator = '$_foundry_$';
 
 const developerApps: { [name: string]: firebase.app.App } = {};
 
@@ -33,6 +35,22 @@ export function getProxiedFoundryAuthApp(name: string) {
   throw new Error(`No proxied Foundry Auth app with the name '${name}'`);
 }
 
+/////////////
+
+// Prefixed email format = <Developer ID>_<Firebase Project ID>$_foundry_$<email>
+// Prefixed User ID format = <Developer ID>_<Firebase Project ID>$_foundry_$<random-string>
+
+export function prefixEmail(owner: EnvOwner, developerProjectID: string, email: string) {
+  return owner.uid + '_' + developerProjectID + foundryAuthSeparator + email;
+}
+
+export function unprefixEmail(prefixedEmail: string) {
+  return prefixedEmail.split(foundryAuthSeparator)[1];
+}
+
+export function unprefixUserID(prefixedUserID: string) {
+  return prefixedUserID.split(foundryAuthSeparator)[1];
+}
 
 /////////////
 

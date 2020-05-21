@@ -1,12 +1,12 @@
 import { Proxied } from '../../../proxy';
 
-import { foundryAuthSeparator } from '../manager';
+import * as manager from '../manager';
 
 export function proxyUser(fbUser: firebase.User) {
   return new Proxied<firebase.User>(fbUser)
     // TODO: Check for arr length when spliting?
-    .when('email', (user) => user.email ? user.email.split(foundryAuthSeparator)[1] : null)
-    .when('uid', (user) => user.uid.split(foundryAuthSeparator)[1])
+    .when('email', (user) => user.email ? manager.unprefixEmail(user.email) : null)
+    .when('uid', (user) => manager.unprefixUserID(user.uid))
     .when('updateEmail', (user) => (newEmail: string) => {
       // TODO
     })
@@ -26,9 +26,10 @@ export function proxyUser(fbUser: firebase.User) {
 
       let unprefixedEmail = email;
       if (email) {
-        unprefixedEmail = email.split(foundryAuthSeparator)[1];
+        unprefixedEmail = manager.unprefixEmail(email)
       }
-      const unprefixedUID = uid.split(foundryAuthSeparator)[1];
+      const unprefixedUID = manager.unprefixUserID(uid);
+
 
       // TODO: If user has multiple providers, we probably change the UID for each provider
       const filtered = providerData.filter(p => p.providerId === 'password');

@@ -46,6 +46,8 @@ function createFoundryAuthApp(
 export function getProxiedFirebase() {
   return new Proxied<typeof firebase>(firebase)
     .when('initializeApp', (fb) => (options: Object, name?: string) => {
+      // TODO: Runtime supports only one Firebase app for now
+      (options as any).projectId = 'test';
       const projectId = (options as any).projectId;
       const app = fb.initializeApp(options, name);
       const proxied = proxyDeveloperApp(app);
@@ -64,9 +66,7 @@ export function getProxiedFirebase() {
         host: 'localhost:8080',
         ssl: false,
       });
-      // TODO:
-      // authApp.functions().useFunctionsEmulator('http://localhost:8000/functions/' + projectId);
-      authApp.functions().useFunctionsEmulator('http://localhost:5001');
+      authApp.functions().useFunctionsEmulator('http://localhost:8000/functions');
 
       manager.addProxiedFoundryAuthApp(authAppName, authApp);
       manager.addProxiedDeveloperApp(app.name, proxied);
